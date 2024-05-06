@@ -13,7 +13,12 @@ def is_valid_ip(ip):
         ipaddress.ip_address(ip)
         return True
     except ValueError:
-        return False
+        try:
+            # Attempt to resolve the input as a domain name
+            socket.gethostbyname(ip)
+            return True
+        except socket.gaierror:
+            return False
 
 
 def parse_port_range(port_range):
@@ -41,14 +46,15 @@ def scan_ports(host_ip, ports):
 
 
 try:
-    host_ip = input("Enter the IP you want to scan: ")
+    host_ip = input("Enter the IP or domain you want to scan: ")
     if not is_valid_ip(host_ip):
-        print("Invalid IP address")
+        print("Invalid IP address or domain name")
         sys.exit()
 
     port_check = input("Enter Port Number or Port Range: ")
     port_range = parse_port_range(port_check)
     if port_range:
+        host_ip = socket.gethostbyname(host_ip)
         open_ports_found = scan_ports(host_ip, port_range)
         input(f"Port scan finished. Found open Ports: {open_ports_found}\nPress Enter to exit...")
     else:
