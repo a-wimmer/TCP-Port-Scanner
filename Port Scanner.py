@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
-import socket
 import ipaddress
+import socket
+import sys
 
 PORT_MIN = 0
 PORT_MAX = 65535
+
 
 def is_valid_ip(ip):
     try:
@@ -12,6 +14,7 @@ def is_valid_ip(ip):
         return True
     except ValueError:
         return False
+
 
 def parse_port_range(port_range):
     if "-" in port_range:
@@ -22,26 +25,35 @@ def parse_port_range(port_range):
         return [int(port_range)]
     return None
 
+
 def scan_ports(host_ip, ports):
+    open_ports_found = []
     for port in ports:
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.settimeout(5)
-                if s.connect_ex((host_ip, port)) == 0:
-                    print(f'Port {port} is open')
-                else:
-                    print(f'Port {port} is closed')
-        except Exception as e:
-            print(f'Error trying to scan port {port}: {e}')
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(0.5)
+            result = s.connect_ex((host_ip, port))
+            if result == 0:
+                print(f"Port {port} is open")
+                open_ports_found.append(port)
+            else:
+                print(f"Port {port} is closed")
+    return open_ports_found
 
-host_ip = input("Enter the IP you want to scan: ")
-if not is_valid_ip(host_ip):
-    print('Invalid IP address')
 
-port_check = input("Enter Port Number or Port Range: ")
-port_range = parse_port_range(port_check)
-if port_range:
-    scan_ports(host_ip, port_range)
-else:
-    print('Invalid port range')
+try:
+    host_ip = input("Enter the IP you want to scan: ")
+    if not is_valid_ip(host_ip):
+        print("Invalid IP address")
+        sys.exit()
 
+    port_check = input("Enter Port Number or Port Range: ")
+    port_range = parse_port_range(port_check)
+    if port_range:
+        open_ports_found = scan_ports(host_ip, port_range)
+        input(f"Port scan finished. Found open Ports: {open_ports_found}\nPress Enter to exit...")
+    else:
+        print("Invalid port range")
+except KeyboardInterrupt:
+    print("\nScan aborted by user.")
+except Exception as e:
+    print(f"Error running Script: {e}")
